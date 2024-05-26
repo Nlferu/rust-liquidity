@@ -29,15 +29,8 @@ impl LpPool {
         liquidity_target: TokenAmount,
     ) -> Result<Self, Errors> {
         // TODO:
-        // State change for all LpPool vars
-        // Returns instance of LpPool
-
-        if min_fee.0 > max_fee.0 {
-            return Err(Errors::InvalidFee);
-        } else {
-            panic!("Aaaa");
-        }
-        // PROVIDE IMPLEMENTATION
+        // State change - All LpPool vars
+        // Returns - Instance of LpPool
     }
 
     pub fn add_liquidity(
@@ -45,31 +38,42 @@ impl LpPool {
         token_amount: TokenAmount,
     ) -> Result<LpTokenAmount, Errors> {
         // TODO:
-        // State change for all LpPool vars
-        // Returns instance of LpPool
-
-        // PROVIDE IMPLEMENTATION
+        // State change - Increases the Token reserve and the amount of LpToken
+        // Returns - New amount of minted LpToken
     }
 
     pub fn remove_liquidity(
         self: &mut Self,
         lp_token_amount: LpTokenAmount,
     ) -> Result<(TokenAmount, StakedTokenAmount), Errors> {
-        // PROVIDE IMPLEMENTATION
+        // TODO:
+        // State change - Decreases Token reserve, decreases StakedToken reserve, and decreases the amount of LpToken
+        // Returns - Specific amounts of Token and StakedToken. The amount of returned tokens is proportional to the LpToken passed,
+        //           considering all LpTokens minted by the LpPool
     }
 
     pub fn swap(
         self: &mut Self,
         staked_token_amount: StakedTokenAmount,
     ) -> Result<TokenAmount, Errors> {
-        // PROVIDE IMPLEMENTATION
+        // TODO:
+        // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
+        // Returns -  Amount of Token received as a result of the exchange.
+        //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
     }
 }
 
 fn main() {
-    println!("Hello, world!");
+    println!("Liquidity protocol!");
 }
 
 // Marinade -> liquid staking protocol on the Solana. It allows to divide your stake among many validators instead of just 1 of top 32.
 // mSOL -> liquidity token that represents staked SOL (It is pegged to the value of SOL)
 // EPOCH -> 2 days
+
+// Requirements:
+// ● Use fixed-point decimals based on the u64 type for all of these parameters, instead of floating points.
+// ● Assume that the price is constant for simplicity.
+// ● Implement a math model in pure Rust; integration with blockchain or UI is not necessary.
+// ● Include unit tests for at least the most important functions.
+// ● Choose any implementation paradigm (such as OOP, functional programming, etc.) based on your preferences.
