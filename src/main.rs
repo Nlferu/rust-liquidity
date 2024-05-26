@@ -1,9 +1,19 @@
-struct TokenAmount(u64);
-struct StakedTokenAmount(u64);
-struct LpTokenAmount(u64);
+#[derive(Debug)]
 struct Price(u64);
+
+#[derive(Debug)]
+struct TokenAmount(u64);
+
+#[derive(Debug)]
+struct StakedTokenAmount(u64);
+
+#[derive(Debug)]
+struct LpTokenAmount(u64);
+
+#[derive(Debug)]
 struct Percentage(u64);
 
+#[derive(Debug)]
 struct LpPool {
     price: Price,
     token_amount: TokenAmount,
@@ -14,6 +24,7 @@ struct LpPool {
     max_fee: Percentage,
 }
 
+#[derive(Debug)]
 enum Errors {
     InvalidFee,
     InsufficientLiquidity,
@@ -29,8 +40,22 @@ impl LpPool {
         liquidity_target: TokenAmount,
     ) -> Result<Self, Errors> {
         // TODO:
-        // State change - All LpPool vars
+        // State change - Updates all LpPool vars
         // Returns - Instance of LpPool
+
+        let token_amount: TokenAmount = TokenAmount(0);
+        let st_token_amount: StakedTokenAmount = StakedTokenAmount(0);
+        let lp_token_amount: LpTokenAmount = LpTokenAmount(0);
+
+        Ok(Self {
+            price,
+            token_amount,
+            st_token_amount,
+            lp_token_amount,
+            liquidity_target,
+            min_fee,
+            max_fee,
+        })
     }
 
     pub fn add_liquidity(
@@ -40,6 +65,10 @@ impl LpPool {
         // TODO:
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
+
+        self.token_amount = token_amount;
+
+        Ok(LpTokenAmount(0))
     }
 
     pub fn remove_liquidity(
@@ -50,6 +79,8 @@ impl LpPool {
         // State change - Decreases Token reserve, decreases StakedToken reserve, and decreases the amount of LpToken
         // Returns - Specific amounts of Token and StakedToken. The amount of returned tokens is proportional to the LpToken passed,
         //           considering all LpTokens minted by the LpPool
+
+        Ok((TokenAmount(0), StakedTokenAmount(0)))
     }
 
     pub fn swap(
@@ -60,11 +91,24 @@ impl LpPool {
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
+
+        Ok(TokenAmount(0))
     }
 }
 
 fn main() {
     println!("Liquidity protocol!");
+
+    // Example usage
+    let price = Price(15);
+    let min_fee = Percentage(1);
+    let max_fee = Percentage(9);
+    let liquidity_target = TokenAmount(90);
+
+    match LpPool::init(price, min_fee, max_fee, liquidity_target) {
+        Ok(lpPool) => println!("Initialized: {:?}", lpPool),
+        Err(e) => println!("Failed to initialize: {:?}", e),
+    }
 }
 
 // Marinade -> liquid staking protocol on the Solana. It allows to divide your stake among many validators instead of just 1 of top 32.
