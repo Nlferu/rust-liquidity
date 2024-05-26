@@ -1,6 +1,3 @@
-#[macro_use]
-mod macros;
-
 #[derive(Debug)]
 struct Price(u64);
 
@@ -15,8 +12,6 @@ struct LpTokenAmount(u64);
 
 #[derive(Debug)]
 struct Percentage(u64);
-
-impl_add_assign!(Price TokenAmount StakedTokenAmount LpTokenAmount Percentage);
 
 #[derive(Debug)]
 struct LpPool {
@@ -67,12 +62,10 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        self.token_amount += token_amount;
+        self.token_amount.0 += token_amount.0;
+        self.lp_token_amount.0 += token_amount.0;
 
-        // let minted_lp_tokens = token_amount; // Simplified for demonstration
-        // self.lp_token_amount = minted_lp_tokens;
-
-        Ok(LpTokenAmount(0))
+        Ok(LpTokenAmount(self.lp_token_amount.0))
     }
 
     pub fn remove_liquidity(
@@ -113,7 +106,14 @@ fn main() {
     let liquidity_target = TokenAmount(9000);
 
     match LpPool::init(price, min_fee, max_fee, liquidity_target) {
-        Ok(lpPool) => println!("Initialized: {:?}", lpPool),
+        Ok(mut lp_pool) => {
+            println!("Initialized: {:?}", lp_pool);
+
+            match lp_pool.add_liquidity(TokenAmount(666)) {
+                Ok(lp_token) => println!("Added liquidity: {:?}", lp_token),
+                Err(e) => println!("Failed to add liquidity: {:?}", e),
+            }
+        }
         Err(e) => println!("Failed to initialize: {:?}", e),
     }
 }
