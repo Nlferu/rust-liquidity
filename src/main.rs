@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 #[derive(Debug)]
 struct Price(u64);
 
@@ -12,6 +15,8 @@ struct LpTokenAmount(u64);
 
 #[derive(Debug)]
 struct Percentage(u64);
+
+impl_add_assign!(Price TokenAmount StakedTokenAmount LpTokenAmount Percentage);
 
 #[derive(Debug)]
 struct LpPool {
@@ -62,7 +67,10 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        self.token_amount = token_amount;
+        self.token_amount += token_amount;
+
+        // let minted_lp_tokens = token_amount; // Simplified for demonstration
+        // self.lp_token_amount = minted_lp_tokens;
 
         Ok(LpTokenAmount(0))
     }
@@ -95,11 +103,14 @@ impl LpPool {
 fn main() {
     println!("Liquidity protocol!");
 
+    const _SCALING_FACTOR: u64 = 100;
+    // Above will be needed for interface information
+
     // Example usage
-    let price = Price(15);
-    let min_fee = Percentage(1);
-    let max_fee = Percentage(9);
-    let liquidity_target = TokenAmount(90);
+    let price = Price(150);
+    let min_fee = Percentage(10);
+    let max_fee = Percentage(900);
+    let liquidity_target = TokenAmount(9000);
 
     match LpPool::init(price, min_fee, max_fee, liquidity_target) {
         Ok(lpPool) => println!("Initialized: {:?}", lpPool),
