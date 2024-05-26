@@ -43,15 +43,11 @@ impl LpPool {
         // State change - Updates all LpPool vars
         // Returns - Instance of LpPool
 
-        let token_amount: TokenAmount = TokenAmount(0);
-        let st_token_amount: StakedTokenAmount = StakedTokenAmount(0);
-        let lp_token_amount: LpTokenAmount = LpTokenAmount(0);
-
         Ok(Self {
             price,
-            token_amount,
-            st_token_amount,
-            lp_token_amount,
+            token_amount: TokenAmount(0),
+            st_token_amount: StakedTokenAmount(0),
+            lp_token_amount: LpTokenAmount(0),
             liquidity_target,
             min_fee,
             max_fee,
