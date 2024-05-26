@@ -13,6 +13,7 @@ struct LpTokenAmount(u64);
 #[derive(Debug)]
 struct Percentage(u64);
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct LpPool {
     price: Price,
@@ -24,6 +25,7 @@ struct LpPool {
     max_fee: Percentage,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum Errors {
     InvalidFee,
@@ -68,6 +70,7 @@ impl LpPool {
         Ok(LpTokenAmount(self.lp_token_amount.0))
     }
 
+    #[allow(dead_code)]
     pub fn remove_liquidity(
         self: &mut Self,
         lp_token_amount: LpTokenAmount,
@@ -77,9 +80,25 @@ impl LpPool {
         // Returns - Specific amounts of Token and StakedToken. The amount of returned tokens is proportional to the LpToken passed,
         //           considering all LpTokens minted by the LpPool
 
-        Ok((TokenAmount(0), StakedTokenAmount(0)))
+        if lp_token_amount.0 > self.lp_token_amount.0 {
+            return Err(Errors::InsufficientLiquidity);
+        }
+
+        // TODO:
+        let token_amount_to_return = 0;
+        let staked_token_amount_to_return = 0;
+
+        self.token_amount.0 -= lp_token_amount.0;
+        self.st_token_amount.0 -= lp_token_amount.0;
+        self.lp_token_amount.0 -= lp_token_amount.0;
+
+        Ok((
+            TokenAmount(token_amount_to_return),
+            StakedTokenAmount(staked_token_amount_to_return),
+        ))
     }
 
+    #[allow(dead_code)]
     pub fn swap(
         self: &mut Self,
         staked_token_amount: StakedTokenAmount,
@@ -89,7 +108,13 @@ impl LpPool {
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
 
-        Ok(TokenAmount(0))
+        let token_amount_to_return =
+            (staked_token_amount.0 * self.price.0 * (10000 - self.min_fee.0)) / 10000;
+
+        self.token_amount.0 -= staked_token_amount.0;
+        self.st_token_amount.0 += staked_token_amount.0;
+
+        Ok(TokenAmount(token_amount_to_return))
     }
 }
 
@@ -99,22 +124,55 @@ fn main() {
     const _SCALING_FACTOR: u64 = 100;
     // Above will be needed for interface information
 
+    let mut pools: Vec<LpPool> = Vec::new();
+
     // Example usage
     let price = Price(150);
     let min_fee = Percentage(10);
     let max_fee = Percentage(900);
     let liquidity_target = TokenAmount(9000);
 
-    match LpPool::init(price, min_fee, max_fee, liquidity_target) {
-        Ok(mut lp_pool) => {
-            println!("Initialized: {:?}", lp_pool);
-
-            match lp_pool.add_liquidity(TokenAmount(666)) {
-                Ok(lp_token) => println!("Added liquidity: {:?}", lp_token),
-                Err(e) => println!("Failed to add liquidity: {:?}", e),
-            }
+    let pool_0 = LpPool::init(price, min_fee, max_fee, liquidity_target);
+    match pool_0 {
+        Ok(pool) => {
+            pools.push(pool);
         }
-        Err(e) => println!("Failed to initialize: {:?}", e),
+        Err(e) => println!("Failed to initialize pool 0: {:?}", e),
+    }
+
+    // Add liquidity to the first pool
+    if let Some(pool) = pools.get_mut(0) {
+        match pool.add_liquidity(TokenAmount(666)) {
+            Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
+            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+        }
+    }
+
+    // Swap to the first pool
+    if let Some(pool) = pools.get_mut(0) {
+        match pool.swap(StakedTokenAmount(666)) {
+            Ok(st_token) => println!("Swap performed: {:?}", st_token),
+            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+        }
+    }
+
+    // Initialize the second pool
+    let price2 = Price(200);
+    let min_fee2 = Percentage(20);
+    let max_fee2 = Percentage(950);
+    let liquidity_target2 = TokenAmount(10000);
+
+    let pool_1 = LpPool::init(price2, min_fee2, max_fee2, liquidity_target2);
+    match pool_1 {
+        Ok(pool) => {
+            pools.push(pool);
+        }
+        Err(e) => println!("Failed to initialize pool 0: {:?}", e),
+    }
+
+    // Access each pool's data
+    for (i, pool) in pools.iter().enumerate() {
+        println!("Pool {}: {:?}", i, pool);
     }
 }
 
