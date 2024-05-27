@@ -1,3 +1,6 @@
+// Use 18 decimals later on for more precision
+const SCALING_FACTOR: u64 = 100_000;
+
 #[derive(Debug)]
 struct Price(u64);
 
@@ -29,6 +32,7 @@ struct LpPool {
 #[derive(Debug)]
 enum Errors {
     InvalidFee,
+    InvalidInitialization,
     InsufficientLiquidity,
     InsufficientLpTokens,
     Other(String),
@@ -44,6 +48,10 @@ impl LpPool {
         // TODO:
         // State change - Updates all LpPool vars
         // Returns - Instance of LpPool
+
+        if price.0 == 0 || liquidity_target.0 == 0 {
+            return Err(Errors::InvalidInitialization);
+        }
 
         Ok(Self {
             price,
@@ -64,10 +72,12 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        self.token_amount.0 += token_amount.0;
-        self.lp_token_amount.0 += token_amount.0;
+        let new_lp_tokens: u64 = token_amount.0;
 
-        Ok(LpTokenAmount(self.lp_token_amount.0))
+        self.token_amount.0 += token_amount.0;
+        self.lp_token_amount.0 += new_lp_tokens;
+
+        Ok(LpTokenAmount(new_lp_tokens))
     }
 
     #[allow(dead_code)]
@@ -108,21 +118,36 @@ impl LpPool {
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
 
-        let token_amount_to_return =
-            (staked_token_amount.0 * self.price.0 * (10_000_000 - self.min_fee.0))
+        // Fees Calculation
+        let mut swap_fee = self.min_fee.0;
+
+        if self.token_amount.0 < self.liquidity_target.0 {
+            swap_fee = self.max_fee.0
+                - (self.max_fee.0 - self.min_fee.0) * self.token_amount.0 / self.liquidity_target.0;
+        }
+
+        println!("Swap Fee Is: {}", swap_fee);
+
+        let token_amount_received: u64 =
+            (staked_token_amount.0 * self.price.0 * (100 * SCALING_FACTOR - swap_fee))
                 / 1_000_000_000_000;
 
-        self.token_amount.0 -= staked_token_amount.0;
-        self.st_token_amount.0 += staked_token_amount.0;
+        println!("Tokens Received: {}", token_amount_received);
 
-        Ok(TokenAmount(token_amount_to_return))
+        if token_amount_received > self.token_amount.0 {
+            return Err(Errors::InsufficientLiquidity);
+        }
+
+        self.token_amount.0 -= token_amount_received;
+        self.st_token_amount.0 += token_amount_received;
+
+        Ok(TokenAmount(token_amount_received))
     }
 }
 
 fn main() {
     println!("Liquidity protocol!");
 
-    const _SCALING_FACTOR: u64 = 100_000;
     // Above will be needed for interface information
 
     let mut pools: Vec<LpPool> = Vec::new();
@@ -154,7 +179,7 @@ fn main() {
     if let Some(pool) = pools.get_mut(0) {
         // Swap (6)
         match pool.swap(StakedTokenAmount(600_000)) {
-            Ok(st_token) => println!("Swap performed: {:?}", st_token),
+            Ok(st_token) => println!("Swap performed: {:?}", (st_token)),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
     }
