@@ -72,12 +72,12 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        let new_lp_tokens: u64 = token_amount.0;
+        let minted_lp_token_amount: u64 = token_amount.0;
 
         self.token_amount.0 += token_amount.0;
-        self.lp_token_amount.0 += new_lp_tokens;
+        self.lp_token_amount.0 += minted_lp_token_amount;
 
-        Ok(LpTokenAmount(new_lp_tokens))
+        Ok(LpTokenAmount(minted_lp_token_amount))
     }
 
     #[allow(dead_code)]
@@ -95,11 +95,13 @@ impl LpPool {
         }
 
         // TODO:
-        let token_amount_to_return = 0;
-        let staked_token_amount_to_return = 0;
+        let token_amount_to_return =
+            (lp_token_amount.0 * self.token_amount.0) / self.lp_token_amount.0;
+        let staked_token_amount_to_return =
+            (lp_token_amount.0 * self.st_token_amount.0) / self.lp_token_amount.0;
 
-        self.token_amount.0 -= lp_token_amount.0;
-        self.st_token_amount.0 -= lp_token_amount.0;
+        self.token_amount.0 -= token_amount_to_return;
+        self.st_token_amount.0 -= staked_token_amount_to_return;
         self.lp_token_amount.0 -= lp_token_amount.0;
 
         Ok((
@@ -130,7 +132,7 @@ impl LpPool {
 
         let token_amount_received: u64 =
             (staked_token_amount.0 * self.price.0 * (100 * SCALING_FACTOR - swap_fee))
-                / 1_000_000_000_000;
+                / (100 * SCALING_FACTOR.pow(2));
 
         println!("Tokens Received: {}", token_amount_received);
 
@@ -139,7 +141,7 @@ impl LpPool {
         }
 
         self.token_amount.0 -= token_amount_received;
-        self.st_token_amount.0 += token_amount_received;
+        self.st_token_amount.0 += staked_token_amount.0;
 
         Ok(TokenAmount(token_amount_received))
     }
@@ -155,8 +157,8 @@ fn main() {
     // Example usage
     let price = Price(150_000);
     let min_fee = Percentage(10_000);
-    let max_fee = Percentage(900_000);
-    let liquidity_target = TokenAmount(9_000_000);
+    let max_fee = Percentage(9 * SCALING_FACTOR);
+    let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
 
     let pool_0 = LpPool::init(price, min_fee, max_fee, liquidity_target);
     match pool_0 {
@@ -169,7 +171,7 @@ fn main() {
     // Add liquidity to the first pool
     if let Some(pool) = pools.get_mut(0) {
         // Add Liquidity (100)
-        match pool.add_liquidity(TokenAmount(10_000_000)) {
+        match pool.add_liquidity(TokenAmount(100 * SCALING_FACTOR)) {
             Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
@@ -178,15 +180,15 @@ fn main() {
     // Swap to the first pool
     if let Some(pool) = pools.get_mut(0) {
         // Swap (6)
-        match pool.swap(StakedTokenAmount(600_000)) {
-            Ok(st_token) => println!("Swap performed: {:?}", (st_token)),
+        match pool.swap(StakedTokenAmount(6 * SCALING_FACTOR)) {
+            Ok(st_token) => println!("Swap performed: {:?}", st_token),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
     }
 
     if let Some(pool) = pools.get_mut(0) {
         // Add Liquidity (10)
-        match pool.add_liquidity(TokenAmount(1_000_000)) {
+        match pool.add_liquidity(TokenAmount(10 * SCALING_FACTOR)) {
             Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
