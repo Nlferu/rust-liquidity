@@ -72,7 +72,14 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        let minted_lp_token_amount: u64 = token_amount.0;
+        // fee = self.token_amount.0 self.liquidity_target.0
+
+        let minted_lp_token_amount: u64 = if self.liquidity_target.0 > self.token_amount.0 {
+            token_amount.0
+        } else {
+            // FIX NEEDED
+            token_amount.0 - (self.token_amount.0 - self.liquidity_target.0 - 1)
+        };
 
         self.token_amount.0 += token_amount.0;
         self.lp_token_amount.0 += minted_lp_token_amount;
@@ -120,7 +127,27 @@ impl LpPool {
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
 
-        // Fees Calculation
+        let fee = self.calculate_fee(staked_token_amount.0 * self.price.0);
+
+        println!("Calculated Fee: {}", fee);
+
+        let net_token_amount = (staked_token_amount.0 * self.price.0 - fee) / SCALING_FACTOR;
+
+        println!("Received Net Token Amount: {}", net_token_amount);
+
+        if net_token_amount > self.token_amount.0 {
+            return Err(Errors::InsufficientLiquidity);
+        }
+
+        self.token_amount.0 -= net_token_amount;
+        self.st_token_amount.0 += staked_token_amount.0;
+
+        println!("self.token_amount.0 after swap: {}", self.token_amount.0);
+
+        Ok(TokenAmount(net_token_amount))
+    }
+
+    fn calculate_fee(&self, amount: u64) -> u64 {
         let mut swap_fee = self.min_fee.0;
 
         if self.token_amount.0 < self.liquidity_target.0 {
@@ -128,22 +155,9 @@ impl LpPool {
                 - (self.max_fee.0 - self.min_fee.0) * self.token_amount.0 / self.liquidity_target.0;
         }
 
-        println!("Swap Fee Is: {}", swap_fee);
+        println!("Fee Used For Calculation: {}", swap_fee);
 
-        let token_amount_received: u64 =
-            (staked_token_amount.0 * self.price.0 * (100 * SCALING_FACTOR - swap_fee))
-                / (100 * SCALING_FACTOR.pow(2));
-
-        println!("Tokens Received: {}", token_amount_received);
-
-        if token_amount_received > self.token_amount.0 {
-            return Err(Errors::InsufficientLiquidity);
-        }
-
-        self.token_amount.0 -= token_amount_received;
-        self.st_token_amount.0 += staked_token_amount.0;
-
-        Ok(TokenAmount(token_amount_received))
+        (amount * swap_fee) / (100 * SCALING_FACTOR)
     }
 }
 
