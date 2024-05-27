@@ -78,7 +78,9 @@ impl LpPool {
             token_amount.0
         } else {
             // FIX NEEDED
-            token_amount.0 - (self.token_amount.0 - self.liquidity_target.0 - 1)
+            let fee = self
+                .calculate_fee((token_amount.0 * self.token_amount.0) / self.liquidity_target.0);
+            token_amount.0 - fee
         };
 
         self.token_amount.0 += token_amount.0;
