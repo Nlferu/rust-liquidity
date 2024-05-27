@@ -109,7 +109,8 @@ impl LpPool {
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
 
         let token_amount_to_return =
-            (staked_token_amount.0 * self.price.0 * (10000 - self.min_fee.0)) / 10000;
+            (staked_token_amount.0 * self.price.0 * (10_000_000 - self.min_fee.0))
+                / 1_000_000_000_000;
 
         self.token_amount.0 -= staked_token_amount.0;
         self.st_token_amount.0 += staked_token_amount.0;
@@ -121,16 +122,16 @@ impl LpPool {
 fn main() {
     println!("Liquidity protocol!");
 
-    const _SCALING_FACTOR: u64 = 100;
+    const _SCALING_FACTOR: u64 = 100_000;
     // Above will be needed for interface information
 
     let mut pools: Vec<LpPool> = Vec::new();
 
     // Example usage
-    let price = Price(150);
-    let min_fee = Percentage(10);
-    let max_fee = Percentage(900);
-    let liquidity_target = TokenAmount(9000);
+    let price = Price(150_000);
+    let min_fee = Percentage(10_000);
+    let max_fee = Percentage(900_000);
+    let liquidity_target = TokenAmount(9_000_000);
 
     let pool_0 = LpPool::init(price, min_fee, max_fee, liquidity_target);
     match pool_0 {
@@ -142,7 +143,8 @@ fn main() {
 
     // Add liquidity to the first pool
     if let Some(pool) = pools.get_mut(0) {
-        match pool.add_liquidity(TokenAmount(666)) {
+        // Add Liquidity (100)
+        match pool.add_liquidity(TokenAmount(10_000_000)) {
             Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
@@ -150,25 +152,42 @@ fn main() {
 
     // Swap to the first pool
     if let Some(pool) = pools.get_mut(0) {
-        match pool.swap(StakedTokenAmount(666)) {
+        // Swap (6)
+        match pool.swap(StakedTokenAmount(600_000)) {
+            Ok(st_token) => println!("Swap performed: {:?}", st_token),
+            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+        }
+    }
+
+    if let Some(pool) = pools.get_mut(0) {
+        // Add Liquidity (10)
+        match pool.add_liquidity(TokenAmount(1_000_000)) {
+            Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
+            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+        }
+    }
+
+    if let Some(pool) = pools.get_mut(0) {
+        // Swap (30)
+        match pool.swap(StakedTokenAmount(3000_000)) {
             Ok(st_token) => println!("Swap performed: {:?}", st_token),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
     }
 
     // Initialize the second pool
-    let price2 = Price(200);
-    let min_fee2 = Percentage(20);
-    let max_fee2 = Percentage(950);
-    let liquidity_target2 = TokenAmount(10000);
+    // let price2 = Price(200_000);
+    // let min_fee2 = Percentage(20_000);
+    // let max_fee2 = Percentage(950_000);
+    // let liquidity_target2 = TokenAmount(10_000_000);
 
-    let pool_1 = LpPool::init(price2, min_fee2, max_fee2, liquidity_target2);
-    match pool_1 {
-        Ok(pool) => {
-            pools.push(pool);
-        }
-        Err(e) => println!("Failed to initialize pool 0: {:?}", e),
-    }
+    // let pool_1 = LpPool::init(price2, min_fee2, max_fee2, liquidity_target2);
+    // match pool_1 {
+    //     Ok(pool) => {
+    //         pools.push(pool);
+    //     }
+    //     Err(e) => println!("Failed to initialize pool 0: {:?}", e),
+    // }
 
     // Access each pool's data
     for (i, pool) in pools.iter().enumerate() {
