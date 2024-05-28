@@ -78,9 +78,11 @@ impl LpPool {
             token_amount.0
         } else {
             // FIX NEEDED
-            let fee = self
-                .calculate_fee((token_amount.0 * self.token_amount.0) / self.liquidity_target.0);
-            token_amount.0 - fee
+            // let fee = self
+            //     .calculate_fee((token_amount.0 * self.token_amount.0) / self.liquidity_target.0);
+
+            // (token_amount.0 * self.lp_token_amount.0) / (self.token_amount.0 - token_amount.0)
+            999910
         };
 
         self.token_amount.0 += token_amount.0;
@@ -128,8 +130,7 @@ impl LpPool {
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
-
-        let fee = self.calculate_fee(staked_token_amount.0 * self.price.0);
+        let fee = self.calculate_fee(staked_token_amount.0 * self.price.0 / SCALING_FACTOR);
 
         println!("Calculated Fee: {}", fee);
 
@@ -145,21 +146,25 @@ impl LpPool {
         self.st_token_amount.0 += staked_token_amount.0;
 
         println!("self.token_amount.0 after swap: {}", self.token_amount.0);
+        println!("Current LP Tokens: {}", self.lp_token_amount.0);
 
         Ok(TokenAmount(net_token_amount))
     }
 
     fn calculate_fee(&self, amount: u64) -> u64 {
-        let mut swap_fee = self.min_fee.0;
+        let mut fee = self.min_fee.0;
 
-        if self.token_amount.0 < self.liquidity_target.0 {
-            swap_fee = self.max_fee.0
-                - (self.max_fee.0 - self.min_fee.0) * self.token_amount.0 / self.liquidity_target.0;
+        let amount_after = self.token_amount.0 - amount;
+        println!("Amount After: {}", amount_after);
+
+        if amount_after < self.liquidity_target.0 {
+            fee = self.max_fee.0
+                - (self.max_fee.0 - self.min_fee.0) * amount_after / self.liquidity_target.0;
         }
 
-        println!("Fee Used For Calculation: {}", swap_fee);
+        println!("Fee Used For Calculation: {}", fee);
 
-        (amount * swap_fee) / (100 * SCALING_FACTOR)
+        (amount * fee) / 100
     }
 }
 
@@ -214,6 +219,14 @@ fn main() {
         // Swap (30)
         match pool.swap(StakedTokenAmount(3000_000)) {
             Ok(st_token) => println!("Swap performed: {:?}", st_token),
+            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+        }
+    }
+
+    if let Some(pool) = pools.get_mut(0) {
+        // Remove (109.9991)
+        match pool.remove_liquidity(LpTokenAmount(10999910)) {
+            Ok(tokens) => println!("Removed Liquidity: {:?}", tokens),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
         }
     }
