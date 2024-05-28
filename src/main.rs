@@ -105,7 +105,6 @@ impl LpPool {
             return Err(Errors::InsufficientLiquidity);
         }
 
-        // TODO:
         let token_amount_to_return =
             (lp_token_amount.0 * self.token_amount.0) / self.lp_token_amount.0;
         let staked_token_amount_to_return =
