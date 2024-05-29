@@ -74,8 +74,6 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        // fee = self.token_amount.0 self.liquidity_target.0
-
         let minted_lp_token_amount: u64 = if self.liquidity_target.0 > self.token_amount.0 {
             token_amount.0
         } else {
@@ -261,6 +259,7 @@ mod tests {
         assert!(result.is_ok());
         let lp_token_amount = result.unwrap();
 
+        assert_eq!(lp_token_amount.0, 100 * SCALING_FACTOR); // Value from story example
         assert_eq!(pool.st_token_amount.0, 0);
         assert_eq!(pool.token_amount.0, lp_token_amount.0);
         assert_eq!(pool.lp_token_amount.0, lp_token_amount.0);
@@ -292,7 +291,7 @@ mod tests {
         assert!(result.is_ok());
         let st_token_amount = result.unwrap();
 
-        assert_eq!(st_token_amount.0, 899100);
+        assert_eq!(st_token_amount.0, 899100); // Value from story example
         assert_eq!(pool.st_token_amount.0, 6 * SCALING_FACTOR);
         assert_eq!(pool.token_amount.0, token_reserve - st_token_amount.0);
         assert_eq!(pool.lp_token_amount.0, 100 * SCALING_FACTOR);
