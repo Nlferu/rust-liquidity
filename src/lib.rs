@@ -31,7 +31,7 @@ struct LpPool {
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 enum Errors {
-    InvalidFee,
+    InvalidFees,
     InsufficientLiquidity,
     InsufficientLpTokens,
     ZeroValue,
@@ -52,6 +52,10 @@ impl LpPool {
 
         if price.0 == 0 || liquidity_target.0 == 0 {
             return Err(Errors::ZeroValue);
+        }
+
+        if max_fee.0 < min_fee.0 {
+            return Err(Errors::InvalidFees);
         }
 
         Ok(Self {
@@ -234,6 +238,19 @@ mod tests {
 
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), Errors::ZeroValue);
+    }
+
+    #[test]
+    fn test_cant_initialize_pool_with_wrong_fees() {
+        let price = Price(150_000);
+        let min_fee = Percentage(90_000);
+        let max_fee = Percentage(89_999);
+        let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
+
+        let result = LpPool::init(price, min_fee, max_fee, liquidity_target);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::InvalidFees);
     }
 
     #[test]
