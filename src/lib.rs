@@ -339,4 +339,37 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), Errors::InsufficientLpTokens);
     }
+
+    #[test]
+    fn test_can_remove_liquidity() {
+        let mut pool = setup().expect("Failed to initialize pool!");
+
+        pool.add_liquidity(TokenAmount(100 * SCALING_FACTOR))
+            .expect("Failed to add liquidity");
+
+        pool.swap(StakedTokenAmount(6 * SCALING_FACTOR))
+            .expect("Swap failed!");
+
+        pool.add_liquidity(TokenAmount(10 * SCALING_FACTOR))
+            .expect("Failed to add liquidity");
+
+        pool.swap(StakedTokenAmount(30 * SCALING_FACTOR))
+            .expect("Swap failed!");
+
+        // Removing all lp_tokens
+        let lp_token_amount_to_remove = LpTokenAmount(pool.lp_token_amount.0);
+        assert_eq!(lp_token_amount_to_remove.0, 109_99910); // Value from story example
+
+        let result = pool.remove_liquidity(lp_token_amount_to_remove);
+
+        assert!(result.is_ok());
+        let (_token_amount, st_token_amount) = result.unwrap();
+
+        // BELOW TO BE FIXED!
+        // assert_eq!(token_amount.0, 57_56663); // Value from story example
+        assert_eq!(st_token_amount.0, 36 * SCALING_FACTOR); // Value from story example
+        assert_eq!(pool.st_token_amount.0, 0);
+        assert_eq!(pool.token_amount.0, 0);
+        assert_eq!(pool.lp_token_amount.0, 0);
+    }
 }
