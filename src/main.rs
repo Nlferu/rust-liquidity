@@ -29,16 +29,17 @@ struct LpPool {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Errors {
     InvalidFee,
-    InvalidInitialization,
     InsufficientLiquidity,
     InsufficientLpTokens,
+    ZeroValue,
     Other(String),
 }
 
 impl LpPool {
+    #[allow(dead_code)]
     pub fn init(
         price: Price,
         min_fee: Percentage,
@@ -50,7 +51,7 @@ impl LpPool {
         // Returns - Instance of LpPool
 
         if price.0 == 0 || liquidity_target.0 == 0 {
-            return Err(Errors::InvalidInitialization);
+            return Err(Errors::ZeroValue);
         }
 
         Ok(Self {
@@ -64,6 +65,7 @@ impl LpPool {
         })
     }
 
+    #[allow(dead_code)]
     pub fn add_liquidity(
         self: &mut Self,
         token_amount: TokenAmount,
@@ -72,28 +74,27 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        // fee = self.token_amount.0 self.liquidity_target.0
-
         let minted_lp_token_amount: u64 = if self.liquidity_target.0 > self.token_amount.0 {
             token_amount.0
         } else {
             // FIX NEEDED
-            println!(
-                "Lq {}, Token {}",
-                self.liquidity_target.0, self.token_amount.0
-            );
-            let fee_percentage = SCALING_FACTOR * self.liquidity_target.0 / self.token_amount.0;
 
-            println!("FEE PERCENTAGE: {}", fee_percentage);
+            // println!(
+            //     "Lq {}, Token {}",
+            //     self.liquidity_target.0, self.token_amount.0
+            // );
+            // let fee_percentage = SCALING_FACTOR * self.liquidity_target.0 / self.token_amount.0;
 
-            let amount_after = self.token_amount.0 + token_amount.0;
-            println!("AMT AFTER: {}", amount_after);
-            let fee_difference = self.max_fee.0 - self.min_fee.0;
-            let new_val = self.max_fee.0
-                - fee_difference * amount_after / (self.liquidity_target.0 * SCALING_FACTOR);
-            // token_amount.0 * (1000 * SCALING_FACTOR - fee_percentage) / (1000 * SCALING_FACTOR);
+            // println!("FEE PERCENTAGE: {}", fee_percentage);
 
-            println!("Value: {}", ((token_amount.0 * (100 - new_val)) / 100));
+            // let amount_after = self.token_amount.0 + token_amount.0;
+            // println!("AMT AFTER: {}", amount_after);
+            // let fee_difference = self.max_fee.0 - self.min_fee.0;
+            // let new_val = self.max_fee.0
+            //     - fee_difference * amount_after / (self.liquidity_target.0 * SCALING_FACTOR);
+            // // token_amount.0 * (1000 * SCALING_FACTOR - fee_percentage) / (1000 * SCALING_FACTOR);
+
+            // println!("Value: {}", ((token_amount.0 * (100 - new_val)) / 100));
 
             // (token_amount.0 * self.lp_token_amount.0) / (self.token_amount.0 - token_amount.0)
             999910
@@ -143,17 +144,34 @@ impl LpPool {
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
-        let fee = self.calculate_fee(staked_token_amount.0 * self.price.0 / SCALING_FACTOR);
 
-        println!("Calculated Fee: {}", fee);
+        let total_amount = staked_token_amount.0 * self.price.0 / SCALING_FACTOR;
 
-        let net_token_amount = (staked_token_amount.0 * self.price.0 - fee) / SCALING_FACTOR;
-
-        println!("Received Net Token Amount: {}", net_token_amount);
-
-        if net_token_amount > self.token_amount.0 {
+        if total_amount > self.token_amount.0 {
             return Err(Errors::InsufficientLiquidity);
         }
+
+        let amount_after = self.token_amount.0 - total_amount;
+        println!("Amount After: {}", amount_after);
+
+        let mut fee = self.min_fee.0;
+
+        if amount_after < self.liquidity_target.0 {
+            let fee_difference = self.max_fee.0 - self.min_fee.0;
+
+            fee = self.max_fee.0 - fee_difference * amount_after / self.liquidity_target.0;
+            // fee = 346138
+        }
+
+        println!("Fee Used For Calculation: {}", fee);
+
+        let fee_amount = (total_amount * fee) / 100;
+
+        println!("Calculated Fee: {}", fee_amount);
+
+        let net_token_amount = (staked_token_amount.0 * self.price.0 - fee_amount) / SCALING_FACTOR;
+
+        println!("Received Net Token Amount: {}", net_token_amount);
 
         self.token_amount.0 -= net_token_amount;
         self.st_token_amount.0 += staked_token_amount.0;
@@ -164,7 +182,7 @@ impl LpPool {
         Ok(TokenAmount(net_token_amount))
     }
 
-    fn calculate_fee(&self, amount: u64) -> u64 {
+    fn _calculate_fee(&self, amount: u64) -> u64 {
         let mut fee = self.min_fee.0;
 
         let amount_after = self.token_amount.0 - amount;
