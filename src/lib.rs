@@ -29,16 +29,17 @@ struct LpPool {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Errors {
     InvalidFee,
-    InvalidInitialization,
     InsufficientLiquidity,
     InsufficientLpTokens,
+    ZeroValue,
     Other(String),
 }
 
 impl LpPool {
+    #[allow(dead_code)]
     pub fn init(
         price: Price,
         min_fee: Percentage,
@@ -50,7 +51,7 @@ impl LpPool {
         // Returns - Instance of LpPool
 
         if price.0 == 0 || liquidity_target.0 == 0 {
-            return Err(Errors::InvalidInitialization);
+            return Err(Errors::ZeroValue);
         }
 
         Ok(Self {
@@ -64,6 +65,7 @@ impl LpPool {
         })
     }
 
+    #[allow(dead_code)]
     pub fn add_liquidity(
         self: &mut Self,
         token_amount: TokenAmount,
@@ -143,17 +145,34 @@ impl LpPool {
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
-        let fee = self.calculate_fee(staked_token_amount.0 * self.price.0 / SCALING_FACTOR);
 
-        println!("Calculated Fee: {}", fee);
+        let total_amount = staked_token_amount.0 * self.price.0 / SCALING_FACTOR;
 
-        let net_token_amount = (staked_token_amount.0 * self.price.0 - fee) / SCALING_FACTOR;
-
-        println!("Received Net Token Amount: {}", net_token_amount);
-
-        if net_token_amount > self.token_amount.0 {
+        if total_amount > self.token_amount.0 {
             return Err(Errors::InsufficientLiquidity);
         }
+
+        let amount_after = self.token_amount.0 - total_amount;
+        println!("Amount After: {}", amount_after);
+
+        let mut fee = self.min_fee.0;
+
+        if amount_after < self.liquidity_target.0 {
+            let fee_difference = self.max_fee.0 - self.min_fee.0;
+
+            fee = self.max_fee.0 - fee_difference * amount_after / self.liquidity_target.0;
+            // fee = 346138
+        }
+
+        println!("Fee Used For Calculation: {}", fee);
+
+        let fee_amount = (total_amount * fee) / 100;
+
+        println!("Calculated Fee: {}", fee_amount);
+
+        let net_token_amount = (staked_token_amount.0 * self.price.0 - fee_amount) / SCALING_FACTOR;
+
+        println!("Received Net Token Amount: {}", net_token_amount);
 
         self.token_amount.0 -= net_token_amount;
         self.st_token_amount.0 += staked_token_amount.0;
@@ -164,7 +183,7 @@ impl LpPool {
         Ok(TokenAmount(net_token_amount))
     }
 
-    fn calculate_fee(&self, amount: u64) -> u64 {
+    fn _calculate_fee(&self, amount: u64) -> u64 {
         let mut fee = self.min_fee.0;
 
         let amount_after = self.token_amount.0 - amount;
@@ -197,6 +216,29 @@ mod tests {
     }
 
     #[test]
+    fn test_cant_initialize_pool_with_zero_value() {
+        let price = Price(0);
+        let min_fee = Percentage(10_000);
+        let max_fee = Percentage(9 * SCALING_FACTOR);
+        let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
+
+        let result = LpPool::init(price, min_fee, max_fee, liquidity_target);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::ZeroValue);
+
+        let price = Price(150_000);
+        let min_fee = Percentage(10_000);
+        let max_fee = Percentage(9 * SCALING_FACTOR);
+        let liquidity_target = TokenAmount(0);
+
+        let result = LpPool::init(price, min_fee, max_fee, liquidity_target);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::ZeroValue);
+    }
+
+    #[test]
     fn test_correctly_initializes_pool() {
         let pool = setup().expect("Failed to initialize pool!");
 
@@ -222,5 +264,37 @@ mod tests {
         assert_eq!(pool.st_token_amount.0, 0);
         assert_eq!(pool.token_amount.0, lp_token_amount.0);
         assert_eq!(pool.lp_token_amount.0, lp_token_amount.0);
+    }
+
+    #[test]
+    fn test_cant_swap_withthout_liquidity() {
+        let mut pool = setup().expect("Failed to initialize pool!");
+
+        let staked_token_amount = StakedTokenAmount(6 * SCALING_FACTOR);
+        let result = pool.swap(staked_token_amount);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::InsufficientLiquidity);
+    }
+
+    #[test]
+    fn test_can_swap_returning_proper_values() {
+        let mut pool = setup().expect("Failed to initialize pool!");
+        let token_amount = TokenAmount(100 * SCALING_FACTOR);
+        pool.add_liquidity(token_amount)
+            .expect("Failed to add liquidity");
+
+        let token_reserve = pool.token_amount.0;
+
+        let staked_token_amount = StakedTokenAmount(6 * SCALING_FACTOR);
+        let result = pool.swap(staked_token_amount);
+
+        assert!(result.is_ok());
+        let st_token_amount = result.unwrap();
+
+        assert_eq!(st_token_amount.0, 899100);
+        assert_eq!(pool.st_token_amount.0, 6 * SCALING_FACTOR);
+        assert_eq!(pool.token_amount.0, token_reserve - st_token_amount.0);
+        assert_eq!(pool.lp_token_amount.0, 100 * SCALING_FACTOR);
     }
 }
