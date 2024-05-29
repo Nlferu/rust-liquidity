@@ -78,13 +78,22 @@ impl LpPool {
             token_amount.0
         } else {
             // FIX NEEDED
-            let fee = self.calculate_fee(
-                (token_amount.0 * self.token_amount.0) / (self.lp_token_amount.0 + token_amount.0),
+            println!(
+                "Lq {}, Token {}",
+                self.liquidity_target.0, self.token_amount.0
             );
+            let fee_percentage = SCALING_FACTOR * self.liquidity_target.0 / self.token_amount.0;
 
-            println!("FEE ADD LIQ: {}", fee / SCALING_FACTOR);
-            let new_val = token_amount.0 - fee / SCALING_FACTOR;
-            println!("NEW VALUE: {}", new_val);
+            println!("FEE PERCENTAGE: {}", fee_percentage);
+
+            let amount_after = self.token_amount.0 + token_amount.0;
+            println!("AMT AFTER: {}", amount_after);
+            let fee_difference = self.max_fee.0 - self.min_fee.0;
+            let new_val = self.max_fee.0
+                - fee_difference * amount_after / (self.liquidity_target.0 * SCALING_FACTOR);
+            // token_amount.0 * (1000 * SCALING_FACTOR - fee_percentage) / (1000 * SCALING_FACTOR);
+
+            println!("Value: {}", ((token_amount.0 * (100 - new_val)) / 100));
 
             // (token_amount.0 * self.lp_token_amount.0) / (self.token_amount.0 - token_amount.0)
             999910
