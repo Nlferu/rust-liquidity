@@ -101,7 +101,7 @@ impl LpPool {
         //           considering all LpTokens minted by the LpPool
 
         if lp_token_amount.0 > self.lp_token_amount.0 {
-            return Err(Errors::InsufficientLiquidity);
+            return Err(Errors::InsufficientLpTokens);
         }
 
         let token_amount_to_return =
@@ -327,5 +327,16 @@ mod tests {
         assert_eq!(pool.st_token_amount.0, 36 * SCALING_FACTOR);
         assert_eq!(pool.token_amount.0, token_reserve - st_token_amount.0);
         assert_eq!(pool.lp_token_amount.0, new_lp_token_amount);
+    }
+
+    #[test]
+    fn test_cant_remove_liquidity_that_exceed_liquidity_supply() {
+        let mut pool = setup().expect("Failed to initialize pool!");
+        let lp_token_amount_to_remove = LpTokenAmount(666 * SCALING_FACTOR);
+
+        let result = pool.remove_liquidity(lp_token_amount_to_remove);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::InsufficientLpTokens);
     }
 }
