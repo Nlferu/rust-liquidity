@@ -172,8 +172,8 @@ mod tests {
     use super::*;
 
     fn setup() -> Result<LpPool, Errors> {
-        let price = Price(150_000);
-        let min_fee = Percentage(10_000);
+        let price = Price(1_50000);
+        let min_fee = Percentage(0_10000);
         let max_fee = Percentage(9 * SCALING_FACTOR);
         let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
 
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn test_cant_initialize_pool_with_zero_value() {
         let price = Price(0);
-        let min_fee = Percentage(10_000);
+        let min_fee = Percentage(0_10000);
         let max_fee = Percentage(9 * SCALING_FACTOR);
         let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
 
@@ -192,8 +192,8 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), Errors::ZeroValue);
 
-        let price = Price(150_000);
-        let min_fee = Percentage(10_000);
+        let price = Price(1_50000);
+        let min_fee = Percentage(0_10000);
         let max_fee = Percentage(9 * SCALING_FACTOR);
         let liquidity_target = TokenAmount(0);
 
@@ -205,9 +205,9 @@ mod tests {
 
     #[test]
     fn test_cant_initialize_pool_with_wrong_fees() {
-        let price = Price(150_000);
-        let min_fee = Percentage(90_000);
-        let max_fee = Percentage(89_999);
+        let price = Price(1_50000);
+        let min_fee = Percentage(9_0000);
+        let max_fee = Percentage(8_9999);
         let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
 
         let result = LpPool::init(price, min_fee, max_fee, liquidity_target);
@@ -220,12 +220,12 @@ mod tests {
     fn test_correctly_initializes_pool() {
         let pool = setup().expect("Failed to initialize pool!");
 
-        assert_eq!(pool.price.0, 150_000);
+        assert_eq!(pool.price.0, 1_50000);
         assert_eq!(pool.token_amount.0, 0);
         assert_eq!(pool.st_token_amount.0, 0);
         assert_eq!(pool.lp_token_amount.0, 0);
         assert_eq!(pool.liquidity_target.0, 90 * SCALING_FACTOR);
-        assert_eq!(pool.min_fee.0, 10_000);
+        assert_eq!(pool.min_fee.0, 0_10000);
         assert_eq!(pool.max_fee.0, 9 * SCALING_FACTOR);
     }
 
@@ -270,7 +270,7 @@ mod tests {
         assert!(result.is_ok());
         let st_token_amount = result.unwrap();
 
-        assert_eq!(st_token_amount.0, 899100); // Value from story example
+        assert_eq!(st_token_amount.0, 8_99100); // Value from story example
         assert_eq!(pool.st_token_amount.0, 6 * SCALING_FACTOR);
         assert_eq!(pool.token_amount.0, token_reserve - st_token_amount.0);
         assert_eq!(pool.lp_token_amount.0, first_liquidity.0);
