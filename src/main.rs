@@ -15,7 +15,6 @@ struct LpTokenAmount(u64);
 #[derive(Debug)]
 struct Percentage(u64);
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct LpPool {
     price: Price,
@@ -27,18 +26,15 @@ struct LpPool {
     max_fee: Percentage,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 enum Errors {
     InvalidFees,
     InsufficientLiquidity,
     InsufficientLpTokens,
     ZeroValue,
-    Other(String),
 }
 
 impl LpPool {
-    #[allow(dead_code)]
     pub fn init(
         price: Price,
         min_fee: Percentage,
@@ -67,7 +63,6 @@ impl LpPool {
         })
     }
 
-    #[allow(dead_code)]
     pub fn add_liquidity(
         self: &mut Self,
         token_amount: TokenAmount,
@@ -96,7 +91,6 @@ impl LpPool {
         Ok(LpTokenAmount(minted_lp_token_amount))
     }
 
-    #[allow(dead_code)]
     pub fn remove_liquidity(
         self: &mut Self,
         lp_token_amount: LpTokenAmount,
@@ -124,7 +118,6 @@ impl LpPool {
         ))
     }
 
-    #[allow(dead_code)]
     pub fn swap(
         self: &mut Self,
         staked_token_amount: StakedTokenAmount,
@@ -140,6 +133,7 @@ impl LpPool {
         }
 
         let amount_after = self.token_amount.0 - total_amount;
+        println!("Amount After: {}", amount_after);
 
         let mut fee = self.min_fee.0;
 
@@ -147,7 +141,6 @@ impl LpPool {
             let fee_difference = self.max_fee.0 - self.min_fee.0;
 
             fee = self.max_fee.0 - fee_difference * amount_after / self.liquidity_target.0;
-            // fee = 346134 instead of >= 346138
         }
 
         println!("Fee Used For Calculation: {}", fee);
@@ -229,33 +222,8 @@ fn main() {
         }
     }
 
-    // Initialize the second pool
-    // let price2 = Price(200_000);
-    // let min_fee2 = Percentage(20_000);
-    // let max_fee2 = Percentage(950_000);
-    // let liquidity_target2 = TokenAmount(10_000_000);
-
-    // let pool_1 = LpPool::init(price2, min_fee2, max_fee2, liquidity_target2);
-    // match pool_1 {
-    //     Ok(pool) => {
-    //         pools.push(pool);
-    //     }
-    //     Err(e) => println!("Failed to initialize pool 0: {:?}", e),
-    // }
-
-    // Access each pool's data
+    // Read each pool's data
     for (i, pool) in pools.iter().enumerate() {
         println!("Pool {}: {:?}", i, pool);
     }
 }
-
-// Marinade -> liquid staking protocol on the Solana. It allows to divide your stake among many validators instead of just 1 of top 32.
-// mSOL -> liquidity token that represents staked SOL (It is pegged to the value of SOL)
-// EPOCH -> 2 days
-
-// Requirements:
-// ● Use fixed-point decimals based on the u64 type for all of these parameters, instead of floating points.
-// ● Assume that the price is constant for simplicity.
-// ● Implement a math model in pure Rust; integration with blockchain or UI is not necessary.
-// ● Include unit tests for at least the most important functions.
-// ● Choose any implementation paradigm (such as OOP, functional programming, etc.) based on your preferences.
