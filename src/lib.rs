@@ -1,33 +1,33 @@
-const SCALING_FACTOR: u64 = 100_000;
+pub const SCALING_FACTOR: u64 = 100_000;
 
 #[derive(Debug)]
-struct Price(u64);
+pub struct Price(pub u64);
 
 #[derive(Debug)]
-struct TokenAmount(u64);
+pub struct TokenAmount(pub u64);
 
 #[derive(Debug)]
-struct StakedTokenAmount(u64);
+pub struct StakedTokenAmount(pub u64);
 
 #[derive(Debug)]
-struct LpTokenAmount(u64);
+pub struct LpTokenAmount(pub u64);
 
 #[derive(Debug)]
-struct Percentage(u64);
+pub struct Percentage(pub u64);
 
 #[derive(Debug)]
-struct LpPool {
-    price: Price,
-    token_amount: TokenAmount,
-    st_token_amount: StakedTokenAmount,
-    lp_token_amount: LpTokenAmount,
-    liquidity_target: TokenAmount,
-    min_fee: Percentage,
-    max_fee: Percentage,
+pub struct LpPool {
+    pub price: Price,
+    pub token_amount: TokenAmount,
+    pub st_token_amount: StakedTokenAmount,
+    pub lp_token_amount: LpTokenAmount,
+    pub liquidity_target: TokenAmount,
+    pub min_fee: Percentage,
+    pub max_fee: Percentage,
 }
 
 #[derive(Debug, PartialEq)]
-enum Errors {
+pub enum Errors {
     InvalidFees,
     InsufficientLiquidity,
     InsufficientLpTokens,
@@ -35,7 +35,6 @@ enum Errors {
 }
 
 impl LpPool {
-    #[allow(dead_code)]
     pub fn init(
         price: Price,
         min_fee: Percentage,
@@ -64,7 +63,6 @@ impl LpPool {
         })
     }
 
-    #[allow(dead_code)]
     pub fn add_liquidity(
         self: &mut Self,
         token_amount: TokenAmount,
@@ -86,6 +84,8 @@ impl LpPool {
 
             let new_lp_token_to_mint_amount = token_amount.0 * SCALING_FACTOR / lp_price;
 
+            println!("Minted Lp Token Amount: {}", new_lp_token_to_mint_amount);
+
             new_lp_token_to_mint_amount
         };
 
@@ -95,7 +95,6 @@ impl LpPool {
         Ok(LpTokenAmount(minted_lp_token_amount))
     }
 
-    #[allow(dead_code)]
     pub fn remove_liquidity(
         self: &mut Self,
         lp_token_amount: LpTokenAmount,
@@ -127,7 +126,6 @@ impl LpPool {
         ))
     }
 
-    #[allow(dead_code)]
     pub fn swap(
         self: &mut Self,
         staked_token_amount: StakedTokenAmount,
@@ -147,6 +145,7 @@ impl LpPool {
         }
 
         let amount_after = self.token_amount.0 - total_amount;
+        println!("Amount After: {}", amount_after);
 
         let mut fee = self.min_fee.0;
 
@@ -156,11 +155,16 @@ impl LpPool {
             fee = self.max_fee.0 - fee_difference * amount_after / self.liquidity_target.0;
         }
 
+        println!("Fee Used For Calculation: {}", fee);
+
         let net_token_amount =
             (total_amount * (100 * SCALING_FACTOR - fee)) / (100 * SCALING_FACTOR);
 
         self.token_amount.0 -= net_token_amount;
         self.st_token_amount.0 += staked_token_amount.0;
+
+        println!("Current Tokens: {}", self.token_amount.0);
+        println!("Current Lp Tokens: {}", self.lp_token_amount.0);
 
         Ok(TokenAmount(net_token_amount))
     }
