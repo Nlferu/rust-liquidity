@@ -72,6 +72,10 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
+        if token_amount.0 == 0 {
+            return Err(Errors::ZeroValue);
+        }
+
         let minted_lp_token_amount: u64 = if self.lp_token_amount.0 == 0 {
             token_amount.0
         } else {
@@ -100,6 +104,10 @@ impl LpPool {
         // Returns - Specific amounts of Token and StakedToken. The amount of returned tokens is proportional to the LpToken passed,
         //           considering all LpTokens minted by the LpPool
 
+        if lp_token_amount.0 == 0 {
+            return Err(Errors::ZeroValue);
+        }
+
         if lp_token_amount.0 > self.lp_token_amount.0 {
             return Err(Errors::InsufficientLpTokens);
         }
@@ -127,6 +135,10 @@ impl LpPool {
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
+
+        if staked_token_amount.0 == 0 {
+            return Err(Errors::ZeroValue);
+        }
 
         let total_amount = staked_token_amount.0 * self.price.0 / SCALING_FACTOR;
 
@@ -217,6 +229,16 @@ mod tests {
     }
 
     #[test]
+    fn test_cant_add_zero_liquidity() {
+        let mut pool = setup().expect("Failed to initialize pool!");
+
+        let result = pool.add_liquidity(TokenAmount(0));
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::ZeroValue);
+    }
+
+    #[test]
     fn test_can_add_liquidity_first_time() {
         let mut pool = setup().expect("Failed to initialize pool!");
 
@@ -231,9 +253,30 @@ mod tests {
         assert_eq!(pool.lp_token_amount.0, lp_token_amount.0);
     }
 
+    // Working
     #[test]
-    fn test_cant_swap_withthout_liquidity() {
+    fn test_can_add_more_liquidity() {
         let mut pool = setup().expect("Failed to initialize pool!");
+
+        let result = pool.add_liquidity(TokenAmount(100 * SCALING_FACTOR));
+
+        assert!(result.is_ok());
+        let lp_token_amount = result.unwrap();
+
+        assert_eq!(lp_token_amount.0, 100 * SCALING_FACTOR); // Value from story example
+        assert_eq!(pool.st_token_amount.0, 0);
+        assert_eq!(pool.token_amount.0, lp_token_amount.0);
+        assert_eq!(pool.lp_token_amount.0, lp_token_amount.0);
+    }
+
+    #[test]
+    fn test_cant_swap_zero_and_withthout_liquidity() {
+        let mut pool = setup().expect("Failed to initialize pool!");
+
+        let result = pool.swap(StakedTokenAmount(0));
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::ZeroValue);
 
         let result = pool.swap(StakedTokenAmount(6 * SCALING_FACTOR));
 
@@ -264,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn test_can_swap_for_max_fee() {
+    fn test_can_swap_for_calculated_fee() {
         let mut pool = setup().expect("Failed to initialize pool!");
 
         let first_liquidity = pool
@@ -295,8 +338,13 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_remove_liquidity_that_exceed_liquidity_supply() {
+    fn test_cant_remove_zero_and_liquidity_that_exceed_liquidity_supply() {
         let mut pool = setup().expect("Failed to initialize pool!");
+
+        let result = pool.remove_liquidity(LpTokenAmount(0));
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Errors::ZeroValue);
 
         let result = pool.remove_liquidity(LpTokenAmount(666 * SCALING_FACTOR));
 
