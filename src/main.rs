@@ -74,27 +74,16 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
-        let minted_lp_token_amount: u64 = if self.liquidity_target.0 > self.token_amount.0 {
+        let minted_lp_token_amount: u64 = if self.lp_token_amount.0 == 0 {
             token_amount.0
         } else {
-            // FIX NEEDED
+            println!(
+                "TOKEN: {} LP TOKEN {}",
+                token_amount.0, self.lp_token_amount.0
+            );
+            let new_val = token_amount.0 * SCALING_FACTOR.pow(1) * 100 / self.lp_token_amount.0;
 
-            // println!(
-            //     "Lq {}, Token {}",
-            //     self.liquidity_target.0, self.token_amount.0
-            // );
-            // let fee_percentage = SCALING_FACTOR * self.liquidity_target.0 / self.token_amount.0;
-
-            // println!("FEE PERCENTAGE: {}", fee_percentage);
-
-            // let amount_after = self.token_amount.0 + token_amount.0;
-            // println!("AMT AFTER: {}", amount_after);
-            // let fee_difference = self.max_fee.0 - self.min_fee.0;
-            // let new_val = self.max_fee.0
-            //     - fee_difference * amount_after / (self.liquidity_target.0 * SCALING_FACTOR);
-            // // token_amount.0 * (1000 * SCALING_FACTOR - fee_percentage) / (1000 * SCALING_FACTOR);
-
-            // println!("Value: {}", ((token_amount.0 * (100 - new_val)) / 100));
+            println!("Value: {}", new_val);
 
             // (token_amount.0 * self.lp_token_amount.0) / (self.token_amount.0 - token_amount.0)
             999910
@@ -165,18 +154,19 @@ impl LpPool {
 
         println!("Fee Used For Calculation: {}", fee);
 
-        let fee_amount = (total_amount * fee) / 100;
+        // This is our net amount
+        let net_token_amount =
+            (total_amount * (100 * SCALING_FACTOR - fee)) / (100 * SCALING_FACTOR);
 
-        println!("Calculated Fee: {}", fee_amount);
+        let fee_amount = total_amount - net_token_amount;
+        println!("Charged Fee: {}", fee_amount);
 
-        let net_token_amount = (staked_token_amount.0 * self.price.0 - fee_amount) / SCALING_FACTOR;
-
-        println!("Received Net Token Amount: {}", net_token_amount);
+        println!("Net Token Amount: {}", net_token_amount);
 
         self.token_amount.0 -= net_token_amount;
         self.st_token_amount.0 += staked_token_amount.0;
 
-        println!("self.token_amount.0 after swap: {}", self.token_amount.0);
+        println!("Reserve after swap: {}", self.token_amount.0);
         println!("Current LP Tokens: {}", self.lp_token_amount.0);
 
         Ok(TokenAmount(net_token_amount))
