@@ -77,16 +77,16 @@ impl LpPool {
         let minted_lp_token_amount: u64 = if self.lp_token_amount.0 == 0 {
             token_amount.0
         } else {
-            println!(
-                "TOKEN: {} LP TOKEN {}",
-                token_amount.0, self.lp_token_amount.0
-            );
-            let new_val = token_amount.0 * SCALING_FACTOR.pow(1) * 100 / self.lp_token_amount.0;
+            let total_token_value =
+                self.token_amount.0 + (self.st_token_amount.0 * self.price.0 / SCALING_FACTOR);
 
-            println!("Value: {}", new_val);
+            let lp_price = total_token_value * SCALING_FACTOR / self.lp_token_amount.0;
 
-            // (token_amount.0 * self.lp_token_amount.0) / (self.token_amount.0 - token_amount.0)
-            999910
+            let new_lp_token_to_mint_amount = token_amount.0 * SCALING_FACTOR / lp_price;
+
+            println!("Value: {}", new_lp_token_to_mint_amount);
+
+            new_lp_token_to_mint_amount
         };
 
         self.token_amount.0 += token_amount.0;
