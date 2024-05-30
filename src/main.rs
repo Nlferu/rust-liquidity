@@ -182,8 +182,6 @@ impl LpPool {
 fn main() {
     println!("Liquidity protocol!");
 
-    // Above will be needed for interface information
-
     let mut pools: Vec<LpPool> = Vec::new();
 
     // Example usage
@@ -200,7 +198,7 @@ fn main() {
         Err(e) => println!("Failed to initialize pool 0: {:?}", e),
     }
 
-    // Add liquidity to the first pool
+    // Add liquidity
     if let Some(pool) = pools.get_mut(0) {
         // Add Liquidity (100)
         match pool.add_liquidity(TokenAmount(100 * SCALING_FACTOR)) {
@@ -209,7 +207,7 @@ fn main() {
         }
     }
 
-    // Swap to the first pool
+    // Swap
     if let Some(pool) = pools.get_mut(0) {
         // Swap (6)
         match pool.swap(StakedTokenAmount(6 * SCALING_FACTOR)) {
@@ -218,6 +216,7 @@ fn main() {
         }
     }
 
+    // Add liquidity
     if let Some(pool) = pools.get_mut(0) {
         // Add Liquidity (10)
         match pool.add_liquidity(TokenAmount(10 * SCALING_FACTOR)) {
@@ -226,6 +225,7 @@ fn main() {
         }
     }
 
+    // Swap
     if let Some(pool) = pools.get_mut(0) {
         // Swap (30)
         match pool.swap(StakedTokenAmount(3000_000)) {
@@ -234,8 +234,9 @@ fn main() {
         }
     }
 
+    // Remove liquidity
     if let Some(pool) = pools.get_mut(0) {
-        // Remove (109.9991)
+        // Remove liquidity (109.9991)
         match pool.remove_liquidity(LpTokenAmount(10999910)) {
             Ok(tokens) => println!("Removed Liquidity: {:?}", tokens),
             Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
