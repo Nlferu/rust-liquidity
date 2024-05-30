@@ -159,24 +159,6 @@ impl LpPool {
 
         Ok(TokenAmount(net_token_amount))
     }
-
-    fn _calculate_fee(&self, amount: u64) -> u64 {
-        let mut fee = self.min_fee.0;
-
-        let amount_after = self.token_amount.0 - amount;
-        println!("Amount After: {}", amount_after);
-
-        if amount_after < self.liquidity_target.0 {
-            let fee_difference = self.max_fee.0 - self.min_fee.0;
-
-            fee = self.max_fee.0 - fee_difference * amount_after / self.liquidity_target.0;
-            // fee = 346138
-        }
-
-        println!("Fee Used For Calculation: {}", fee);
-
-        (amount * fee) / 100
-    }
 }
 
 fn main() {
