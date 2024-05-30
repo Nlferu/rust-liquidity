@@ -1,4 +1,3 @@
-// Use 18 decimals later on for more precision
 const SCALING_FACTOR: u64 = 100_000;
 
 #[derive(Debug)]
@@ -46,7 +45,6 @@ impl LpPool {
         max_fee: Percentage,
         liquidity_target: TokenAmount,
     ) -> Result<Self, Errors> {
-        // TODO:
         // State change - Updates all LpPool vars
         // Returns - Instance of LpPool
 
@@ -70,7 +68,6 @@ impl LpPool {
         self: &mut Self,
         token_amount: TokenAmount,
     ) -> Result<LpTokenAmount, Errors> {
-        // TODO:
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
@@ -84,7 +81,7 @@ impl LpPool {
 
             let new_lp_token_to_mint_amount = token_amount.0 * SCALING_FACTOR / lp_price;
 
-            println!("Value: {}", new_lp_token_to_mint_amount);
+            println!("Minted Lp Token Amount: {}", new_lp_token_to_mint_amount);
 
             new_lp_token_to_mint_amount
         };
@@ -100,7 +97,6 @@ impl LpPool {
         self: &mut Self,
         lp_token_amount: LpTokenAmount,
     ) -> Result<(TokenAmount, StakedTokenAmount), Errors> {
-        // TODO:
         // State change - Decreases Token reserve, decreases StakedToken reserve, and decreases the amount of LpToken
         // Returns - Specific amounts of Token and StakedToken. The amount of returned tokens is proportional to the LpToken passed,
         //           considering all LpTokens minted by the LpPool
@@ -129,7 +125,6 @@ impl LpPool {
         self: &mut Self,
         staked_token_amount: StakedTokenAmount,
     ) -> Result<TokenAmount, Errors> {
-        // TODO:
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
@@ -141,7 +136,6 @@ impl LpPool {
         }
 
         let amount_after = self.token_amount.0 - total_amount;
-        println!("Amount After: {}", amount_after);
 
         let mut fee = self.min_fee.0;
 
@@ -154,19 +148,13 @@ impl LpPool {
 
         println!("Fee Used For Calculation: {}", fee);
 
-        // This is our net amount
         let net_token_amount =
             (total_amount * (100 * SCALING_FACTOR - fee)) / (100 * SCALING_FACTOR);
-
-        let fee_amount = total_amount - net_token_amount;
-        println!("Charged Fee: {}", fee_amount);
-
-        println!("Net Token Amount: {}", net_token_amount);
 
         self.token_amount.0 -= net_token_amount;
         self.st_token_amount.0 += staked_token_amount.0;
 
-        println!("Reserve after swap: {}", self.token_amount.0);
+        println!("Current Tokens: {}", self.token_amount.0);
         println!("Current LP Tokens: {}", self.lp_token_amount.0);
 
         Ok(TokenAmount(net_token_amount))
