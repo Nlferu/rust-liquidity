@@ -253,20 +253,30 @@ mod tests {
         assert_eq!(pool.lp_token_amount.0, lp_token_amount.0);
     }
 
-    // Working
     #[test]
-    fn test_can_add_more_liquidity() {
+    fn test_can_add_liquidity_with_fees_accumulated() {
         let mut pool = setup().expect("Failed to initialize pool!");
 
-        let result = pool.add_liquidity(TokenAmount(100 * SCALING_FACTOR));
+        let first_addition = pool
+            .add_liquidity(TokenAmount(100 * SCALING_FACTOR))
+            .expect("Failed to add liquidity");
+
+        let swapped_tokens = pool
+            .swap(StakedTokenAmount(6 * SCALING_FACTOR))
+            .expect("Swap failed!");
+
+        let result = pool.add_liquidity(TokenAmount(10 * SCALING_FACTOR));
 
         assert!(result.is_ok());
         let lp_token_amount = result.unwrap();
 
-        assert_eq!(lp_token_amount.0, 100 * SCALING_FACTOR); // Value from story example
-        assert_eq!(pool.st_token_amount.0, 0);
-        assert_eq!(pool.token_amount.0, lp_token_amount.0);
-        assert_eq!(pool.lp_token_amount.0, lp_token_amount.0);
+        assert_eq!(lp_token_amount.0, 9_99910); // Value from story example
+        assert_eq!(pool.st_token_amount.0, 6 * SCALING_FACTOR);
+        assert_eq!(
+            pool.token_amount.0,
+            first_addition.0 - swapped_tokens.0 + 10 * SCALING_FACTOR
+        );
+        assert_eq!(pool.lp_token_amount.0, first_addition.0 + lp_token_amount.0);
     }
 
     #[test]
