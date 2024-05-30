@@ -30,7 +30,7 @@ struct LpPool {
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 enum Errors {
-    InvalidFee,
+    InvalidFees,
     InsufficientLiquidity,
     InsufficientLpTokens,
     ZeroValue,
@@ -50,6 +50,10 @@ impl LpPool {
 
         if price.0 == 0 || liquidity_target.0 == 0 {
             return Err(Errors::ZeroValue);
+        }
+
+        if max_fee.0 < min_fee.0 {
+            return Err(Errors::InvalidFees);
         }
 
         Ok(Self {
@@ -102,7 +106,7 @@ impl LpPool {
         //           considering all LpTokens minted by the LpPool
 
         if lp_token_amount.0 > self.lp_token_amount.0 {
-            return Err(Errors::InsufficientLiquidity);
+            return Err(Errors::InsufficientLpTokens);
         }
 
         let token_amount_to_return =
@@ -143,7 +147,7 @@ impl LpPool {
             let fee_difference = self.max_fee.0 - self.min_fee.0;
 
             fee = self.max_fee.0 - fee_difference * amount_after / self.liquidity_target.0;
-            // fee = 346138
+            // fee = 346134 instead of >= 346138
         }
 
         println!("Fee Used For Calculation: {}", fee);
