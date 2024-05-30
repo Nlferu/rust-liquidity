@@ -70,6 +70,10 @@ impl LpPool {
         // State change - Increases the Token reserve and the amount of LpToken
         // Returns - New amount of minted LpToken
 
+        if token_amount.0 == 0 {
+            return Err(Errors::ZeroValue);
+        }
+
         let minted_lp_token_amount: u64 = if self.lp_token_amount.0 == 0 {
             token_amount.0
         } else {
@@ -99,6 +103,10 @@ impl LpPool {
         // Returns - Specific amounts of Token and StakedToken. The amount of returned tokens is proportional to the LpToken passed,
         //           considering all LpTokens minted by the LpPool
 
+        if lp_token_amount.0 == 0 {
+            return Err(Errors::ZeroValue);
+        }
+
         if lp_token_amount.0 > self.lp_token_amount.0 {
             return Err(Errors::InsufficientLpTokens);
         }
@@ -125,6 +133,10 @@ impl LpPool {
         // State change - Decreases Token reserve and increases StakedToken reserve in the LpPool
         // Returns -  Amount of Token received as a result of the exchange.
         //            The received token amount depends on the StakedToken passed during invocation and the fee charged by the LpPool.
+
+        if staked_token_amount.0 == 0 {
+            return Err(Errors::ZeroValue);
+        }
 
         let total_amount = staked_token_amount.0 * self.price.0 / SCALING_FACTOR;
 
@@ -164,8 +176,8 @@ fn main() {
     let mut pools: Vec<LpPool> = Vec::new();
 
     // Example usage
-    let price = Price(150_000);
-    let min_fee = Percentage(10_000);
+    let price = Price(1_50000);
+    let min_fee = Percentage(0_10000);
     let max_fee = Percentage(9 * SCALING_FACTOR);
     let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
 
@@ -174,15 +186,20 @@ fn main() {
         Ok(pool) => {
             pools.push(pool);
         }
-        Err(e) => println!("Failed to initialize pool 0: {:?}", e),
+        Err(Errors::ZeroValue) => println!("Failed to initialize pool: Zero value provided."),
+        Err(Errors::InvalidFees) => println!("Failed to initialize pool: Invalid fee structure."),
+        _ => println!("Failed to initialize pool: Unknown error."),
     }
 
     // Add liquidity
     if let Some(pool) = pools.get_mut(0) {
         // Add Liquidity (100)
         match pool.add_liquidity(TokenAmount(100 * SCALING_FACTOR)) {
-            Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
-            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+            Ok(lp_token) => println!("Added liquidity to pool: {:?}", lp_token),
+            Err(Errors::ZeroValue) => {
+                println!("Failed to add liquidity to the pool: Zero value provided.")
+            }
+            _ => println!("Failed to add liquidity to the pool: Unknown error."),
         }
     }
 
@@ -191,7 +208,11 @@ fn main() {
         // Swap (6)
         match pool.swap(StakedTokenAmount(6 * SCALING_FACTOR)) {
             Ok(st_token) => println!("Swap performed: {:?}", st_token),
-            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+            Err(Errors::ZeroValue) => println!("Failed to swap: Zero value provided."),
+            Err(Errors::InsufficientLiquidity) => {
+                println!("Failed to swap: Insufficient liquidity.")
+            }
+            _ => println!("Failed to swap: Unknown error."),
         }
     }
 
@@ -199,26 +220,37 @@ fn main() {
     if let Some(pool) = pools.get_mut(0) {
         // Add Liquidity (10)
         match pool.add_liquidity(TokenAmount(10 * SCALING_FACTOR)) {
-            Ok(lp_token) => println!("Added liquidity to pool 0: {:?}", lp_token),
-            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+            Ok(lp_token) => println!("Added liquidity to pool: {:?}", lp_token),
+            Err(Errors::ZeroValue) => {
+                println!("Failed to add liquidity to the pool: Zero value provided.")
+            }
+            _ => println!("Failed to add liquidity to the pool: Unknown error."),
         }
     }
 
     // Swap
     if let Some(pool) = pools.get_mut(0) {
         // Swap (30)
-        match pool.swap(StakedTokenAmount(3000_000)) {
+        match pool.swap(StakedTokenAmount(30_00000)) {
             Ok(st_token) => println!("Swap performed: {:?}", st_token),
-            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+            Err(Errors::ZeroValue) => println!("Failed to swap: Zero value provided."),
+            Err(Errors::InsufficientLiquidity) => {
+                println!("Failed to swap: Insufficient liquidity.")
+            }
+            _ => println!("Failed to swap: Unknown error."),
         }
     }
 
     // Remove liquidity
     if let Some(pool) = pools.get_mut(0) {
         // Remove liquidity (109.9991)
-        match pool.remove_liquidity(LpTokenAmount(10999910)) {
+        match pool.remove_liquidity(LpTokenAmount(109_99910)) {
             Ok(tokens) => println!("Removed Liquidity: {:?}", tokens),
-            Err(e) => println!("Failed to add liquidity to pool 0: {:?}", e),
+            Err(Errors::ZeroValue) => println!("Failed to remove liquidity: Zero value provided."),
+            Err(Errors::InsufficientLpTokens) => {
+                println!("Failed to remove liquidity: Insufficient LP tokens.")
+            }
+            _ => println!("Failed to remove liquidity: Unknown error."),
         }
     }
 
