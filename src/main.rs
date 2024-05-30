@@ -14,6 +14,7 @@ fn main() {
     let max_fee = Percentage(9 * SCALING_FACTOR);
     let liquidity_target = TokenAmount(90 * SCALING_FACTOR);
 
+    // Pool initialization
     let pool_0 = LpPool::init(price, min_fee, max_fee, liquidity_target);
     match pool_0 {
         Ok(pool) => {
